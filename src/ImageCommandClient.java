@@ -20,9 +20,11 @@ public class ImageCommandClient {
         // Send resizeCommand to remote queue
         invoker.sendCommand(resizeCommand);
 
+        /*------------------------------------------------------------------------------------------------------*/
         // Receive and execute commands (simulating a distributed environment), this
         // would normally happen on a different host
         invoker.receiveAndExecuteCommand();
+        /*------------------------------------------------------------------------------------------------------*/
 
         // Now let's apply a border to the resized image.
         // TODO: Implement a resize and border MACRO command to do both.
@@ -34,7 +36,12 @@ public class ImageCommandClient {
         ImageCommand borderCommand = new BorderImageCommand(borderImage);
         // Execute resize and border commands
         invoker.sendCommand(borderCommand);
+
+        /*------------------------------------------------------------------------------------------------------*/
+        // Receive and execute commands (simulating a distributed environment), this
+        // would normally happen on a different host
         invoker.receiveAndExecuteCommand();
+        /*------------------------------------------------------------------------------------------------------*/
 
         // Undo commands
         //invoker.undoCommand(borderCommand);
