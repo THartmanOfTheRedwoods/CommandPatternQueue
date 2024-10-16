@@ -11,7 +11,6 @@ class ResizeImageCommand implements ImageCommand {
     @Override
     public void execute() throws IOException {
         resizeImage.resize();
-        resizeImage.write();
     }
 
     @Override

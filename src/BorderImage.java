@@ -4,58 +4,49 @@ import java.awt.image.BufferedImage;
 import java.io.*;
 
 class BorderImage implements Serializable {
-    private byte[] imageBytes;
-    private Color borderColor;
-    private int borderSize;
-    private String outPath;
+    private final String newImagePath;
+    private final String imagePath;
+    private transient BufferedImage image;
+    private final Color borderColor;
+    private final int borderSize;
 
-    public BorderImage(BufferedImage image, Color borderColor, int borderSize, String outPath) throws IOException {
-        this.imageBytes = bufferedImageToByteArray(image);
+    public BorderImage(String imagePath, String newImagePath, Color borderColor, int borderSize) {
         this.borderColor = borderColor;
         this.borderSize = borderSize;
-        this.outPath = outPath;
+        this.imagePath = imagePath;
+        this.newImagePath = newImagePath;
+    }
+
+    public BorderImage(String imagePath, Color borderColor, int borderSize) {
+        this(imagePath, imagePath, borderColor, borderSize);
+    }
+
+    public void load() throws IOException {
+        this.image = ImageIO.read(new File(this.imagePath));
     }
 
     public void addBorder() throws IOException {
-        BufferedImage image = byteArrayToBufferedImage(imageBytes);
-        int newWidth = image.getWidth() + 2 * borderSize;
-        int newHeight = image.getHeight() + 2 * borderSize;
-        BufferedImage borderedImage = new BufferedImage(newWidth, newHeight, image.getType());
+        if(this.image == null) { this.load(); }
+
+        int newWidth = this.image.getWidth() + 2 * borderSize;
+        int newHeight = this.image.getHeight() + 2 * borderSize;
+        BufferedImage borderedImage = new BufferedImage(newWidth, newHeight, this.image.getType());
         Graphics2D g = borderedImage.createGraphics();
         g.setColor(borderColor);
         g.fillRect(0, 0, newWidth, newHeight);
-        g.drawImage(image, borderSize, borderSize, null);
+        g.drawImage(this.image, borderSize, borderSize, null);
         g.dispose();
-        imageBytes = bufferedImageToByteArray(borderedImage);
+        ImageIO.write(borderedImage, "jpg", new File(this.newImagePath));
         System.out.println("Border added with color " + borderColor + " and size " + borderSize);
     }
 
-    public void write() throws IOException {
-        ImageIO.write(byteArrayToBufferedImage(imageBytes), "jpg", new File(this.outPath));
-    }
-
+    //TODO: For this to work, the original image path would need to be saved somewhere
     public void removeBorder() throws IOException {
-        BufferedImage image = byteArrayToBufferedImage(imageBytes);
-        int originalWidth = image.getWidth() - 2 * borderSize;
-        int originalHeight = image.getHeight() - 2 * borderSize;
-        BufferedImage originalImage = image.getSubimage(borderSize, borderSize, originalWidth, originalHeight);
-        imageBytes = bufferedImageToByteArray(originalImage);
+        if(this.image == null) { this.load(); }
+        int originalWidth = this.image.getWidth() - 2 * borderSize;
+        int originalHeight = this.image.getHeight() - 2 * borderSize;
+        BufferedImage originalImage = this.image.getSubimage(borderSize, borderSize, originalWidth, originalHeight);
+        ImageIO.write(originalImage, "jpg", new File(this.imagePath));
         System.out.println("Border removed");
-    }
-
-    public BufferedImage getImage() throws IOException {
-        return byteArrayToBufferedImage(imageBytes);
-    }
-
-    // Helper methods to convert between BufferedImage and byte array
-    private byte[] bufferedImageToByteArray(BufferedImage image) throws IOException {
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        ImageIO.write(image, "jpg", baos);
-        return baos.toByteArray();
-    }
-
-    public BufferedImage byteArrayToBufferedImage(byte[] bytes) throws IOException {
-        ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
-        return ImageIO.read(bais);
     }
 }

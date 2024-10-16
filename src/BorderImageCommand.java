@@ -11,7 +11,6 @@ class BorderImageCommand implements ImageCommand {
     @Override
     public void execute() throws IOException {
         borderImage.addBorder();
-        borderImage.write();
     }
 
     @Override

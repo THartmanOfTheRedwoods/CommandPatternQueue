@@ -4,59 +4,51 @@ import java.awt.image.BufferedImage;
 import java.io.*;
 
 class ResizeImage implements Serializable {
-    private byte[] imageBytes; // Serialized image data
+    private transient BufferedImage image;  // transient skips variable during serialization
+    private final String imagePath;
+    private final String newImagePath;
     private int originalWidth;
     private int originalHeight;
-    private int newWidth;
-    private int newHeight;
-    private String outPath;
+    private final int newWidth;
+    private final int newHeight;
 
-    public ResizeImage(BufferedImage image, int newWidth, int newHeight, String outPath) throws IOException {
-        this.imageBytes = bufferedImageToByteArray(image);
-        this.originalWidth = image.getWidth();
-        this.originalHeight = image.getHeight();
+    public ResizeImage(String imagePath, String newImagePath, int newWidth, int newHeight) {
+        this.imagePath = imagePath;
+        this.newImagePath = newImagePath;
         this.newWidth = newWidth;
         this.newHeight = newHeight;
-        this.outPath = outPath;
+    }
+
+    public ResizeImage(String imagePath, int newWidth, int newHeight) {
+        this(imagePath, imagePath, newWidth, newHeight);
+    }
+
+    public void load() throws IOException {
+        this.image = ImageIO.read(new File(imagePath));
+        this.originalWidth = image.getWidth();
+        this.originalHeight = image.getHeight();
     }
 
     public void resize() throws IOException {
-        BufferedImage image = byteArrayToBufferedImage(imageBytes);
-        BufferedImage resizedImage = new BufferedImage(newWidth, newHeight, image.getType());
+        if(this.image == null) { this.load(); }  // Load the image if it isn't already
+
+        BufferedImage resizedImage = new BufferedImage(newWidth, newHeight, this.image.getType());
         Graphics2D g = resizedImage.createGraphics();
-        g.drawImage(image, 0, 0, newWidth, newHeight, null);
+        g.drawImage(this.image, 0, 0, newWidth, newHeight, null);
         g.dispose();
-        imageBytes = bufferedImageToByteArray(resizedImage);
+        ImageIO.write(resizedImage, "jpg", new File(this.newImagePath));
         System.out.println("Image resized to " + newWidth + "x" + newHeight);
     }
 
-    public void write() throws IOException {
-        ImageIO.write(byteArrayToBufferedImage(imageBytes), "jpg", new File(this.outPath));
-    }
-
+    //TODO: For this to work, the original image path would need to be saved somewhere
     public void restoreOriginalSize() throws IOException {
-        BufferedImage image = byteArrayToBufferedImage(imageBytes);
+        if(this.image == null) { this.load(); }  // Load the image if it isn't already
+
         BufferedImage originalImage = new BufferedImage(originalWidth, originalHeight, image.getType());
         Graphics2D g = originalImage.createGraphics();
         g.drawImage(image, 0, 0, originalWidth, originalHeight, null);
         g.dispose();
-        imageBytes = bufferedImageToByteArray(originalImage);
+        ImageIO.write(originalImage, "jpg", new File(this.imagePath));
         System.out.println("Image restored to original size: " + originalWidth + "x" + originalHeight);
-    }
-
-    public BufferedImage getImage() throws IOException {
-        return byteArrayToBufferedImage(imageBytes);
-    }
-
-    // Helper methods to convert between BufferedImage and byte array
-    private byte[] bufferedImageToByteArray(BufferedImage image) throws IOException {
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        ImageIO.write(image, "jpg", baos);
-        return baos.toByteArray();
-    }
-
-    private BufferedImage byteArrayToBufferedImage(byte[] bytes) throws IOException {
-        ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
-        return ImageIO.read(bais);
     }
 }
