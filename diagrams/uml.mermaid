@@ -1,0 +1,99 @@
+classDiagram
+    note for ImageCommandClient "The Client creates a ConcreteCommand and sets its Receiver."
+    note for CommandQueueInvoker "The Invoker holds a Command object via ZMQ and triggers its execution."
+    note for ImageCommand "The Command interface declares the execute() method."
+    note for BorderImageCommand "The ConcreteCommand implements execute() and interacts with the Receiver."
+    note for BorderImage "The Receiver performs the actual action (e.g., BorderImage prepares the meal)."
+
+    class ImageCommandClient {
+        <<Client>>
+    }
+    class CommandQueueInvoker {
+        <<Invoker>>
+        -context: ZMQ.Context 
+        -sender: ZMQ.Socket
+        -receiver: ZMQ.Socket
+        +sendCommand(ImageCommand command)
+        +receiveAndExecuteCommand()
+        +close()
+    }
+    class ImageCommand {
+        <<Command Interface>>
+        +execute()
+        +undo()
+    }
+    class BorderImageCommand {
+        <<ConcreteCommand>>
+        -borderImage: BorderImage
+        +execute()
+        +undo()
+    }
+    class ImageUploadCommand {
+        <<ConcreteCommand>>
+        -uploadImage: UploadImage
+        +execute()
+        +undo()
+    }
+    class ResizeImageCommand {
+        <<ConcreteCommand>>
+        -resizeImage: ResizeImage
+        +execute()
+        +undo()
+    }
+    class MACROCommand {
+        <<ConcreteCommand>>
+        -commands: List~ImageCommand~
+        +execute() "loop over commands and call execute."
+        +undo() "loop over commands and call undo"
+    }
+    class NullCommand {
+        <<ConcreteCommand>>
+        +execute()
+        +undo()
+    }
+    class BorderImage {
+        <<Receiver>>
+        +load()
+        +addBorder()
+        +removeBorder()
+    }
+    class UploadImage {
+        <<Receiver>>
+        -imageBytes : byte[] 
+        -outPath : final String 
+        +write()
+        +delete()
+        -bufferedImageToByteArray(BufferedImage image) byte[]
+        -byteArrayToBufferedImage(byte[] bytes) BufferedImage
+    }
+    class ResizeImage {
+        <<Receiver>>
+        +load()
+        +resize()
+        +restoreOriginalSize()
+    }
+
+    ImageCommandClient --> BorderImage : creates
+    ImageCommandClient --> UploadImage : creates
+    ImageCommandClient --> ResizeImage : creates
+    ImageCommandClient --> BorderImageCommand : creates
+    ImageCommandClient --> ImageUploadCommand : creates
+    ImageCommandClient --> ResizeImageCommand : creates
+    ImageCommandClient --> MACROCommand : creates
+    ImageCommandClient --> NullCommand : creates
+    ImageCommandClient --> CommandQueueInvoker : "calls takeOrder"
+    CommandQueueInvoker --> ImageCommand : holds
+    CommandQueueInvoker *-- ImageCommand : composition
+    BorderImage <-- BorderImageCommand : interacts with
+    BorderImage --* BorderImageCommand : composition
+    BorderImageCommand ..|> ImageCommand : implements
+    UploadImage <-- ImageUploadCommand : interacts with
+    UploadImage --* ImageUploadCommand : composition
+    ImageUploadCommand ..|> ImageCommand : implements
+    ResizeImage <-- ResizeImageCommand : interacts with
+    ResizeImage --* ResizeImageCommand : composition
+    ResizeImageCommand ..|> ImageCommand : implements
+    ImageCommand <-- MACROCommand : interacts with
+    ImageCommand --* MACROCommand : composition
+    MACROCommand ..|> ImageCommand : implements
+    NullCommand ..|> ImageCommand : implements
